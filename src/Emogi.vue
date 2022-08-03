@@ -110,7 +110,7 @@ border: 0;
 }
 
 .emoji-picker {
-  /* position: relative; */
+  
   z-index: 1;
   font-family: Montserrat;
   border: 1px solid #ccc;

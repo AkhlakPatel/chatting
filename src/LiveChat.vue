@@ -58,9 +58,10 @@
         <h2 class="new_message_title">New message</h2>
         <div class="input">
           <input
-            class="form_input"
+            class="input_button form_input"
             placeholder="Your message..."
             v-model="messageInput"
+            @keyup.enter="sendmsg"
           />
           <div class="upload-icon">
             <input
@@ -70,17 +71,66 @@
               ref="fileInput"
               @input="onSelectFile"
               accept="image/png, image/gif, image/jpeg"
+               @keyup.enter="sendmsg"
             />
-            <label
-              for="upload-file"
-              class="fa-solid fa-upload"
-              @click="uploadFile"
-            ></label>
-            <i class="fa-solid fa-thumbs-up" @click="handleLike"></i>
+            <div class="input_icons">
+              <label
+                for="upload-file"
+                class="fa-solid fa-upload upload-like-icon"
+                @click="uploadFile"
+              ></label>
+              <i class="fa-solid fa-thumbs-up " @click="handleLike"></i>
+            </div>
           </div>
+          <!--Icon Functionality Start  -->
+          <emoji-picker @emoji="append" :search="search">
+            <button
+              class="emoji-invoker"
+              slot="emoji-invoker"
+              slot-scope="{ events: { click: clickEvent } }"
+              @click.stop="clickEvent"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 fill-current text-grey"
+              >
+                <path d="M0 0h24v24H0z" fill="none" />
+                <path
+                  d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
+                />
+              </svg>
+            </button>
+            <div slot="emoji-picker" slot-scope="{ emojis, insert, display }">
+              <div
+                class="emoji-picker"
+                :style="{ top: display.y + 'px', left: display.x + 'px' }"
+              >
+                <div class="emoji-picker__search">
+                  <input type="text" v-model="search" v-focus />
+                </div>
+                <div>
+                  <div v-for="(emojiGroup, category) in emojis" :key="category">
+                    <h5>{{ category }}</h5>
+                    <div class="emojis">
+                      <span
+                        v-for="(emoji, emojiName) in emojiGroup"
+                        :key="emojiName"
+                        @click="insert(emoji)"
+                        :title="emojiName"
+                        >{{ emoji }}</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </emoji-picker>
+          <!--Icon Functionality End  -->
+
+          <i class="fa-solid fa-share send_msg_btn" @click="sendmsg"></i>
         </div>
-        <button class="send_msg_btn" @click="sendmsg">Send message</button>
-        
+        <!-- <button class="send_msg_btn" @click="sendmsg">Send message</button> -->
       </div>
     </div>
   </div>
@@ -88,6 +138,7 @@
 
 <script>
 const Parse = require("parse");
+import EmojiPicker from "vue-emoji-picker";
 export default {
   name: "LiveChat",
   props: {
@@ -96,13 +147,16 @@ export default {
     receiverNicknameInput: String,
     receiverNicknameId: String,
   },
+  components: {
+    EmojiPicker,
+  },
   data() {
     return {
       messageInput: "",
       result: {},
       image: "",
       like: false,
-      // imageUrl: {},
+      search: "", // for Icon/Emogi search
     };
   },
   methods: {
@@ -238,15 +292,14 @@ export default {
         reader.onload = (e) => {
           this.image = e.target.result;
           console.log(this.image);
-      //      console.log(this.image.substring(
-      //   "data:".length,
-      //   this.image.indexOf(";base64")
-      //  ));
+          //      console.log(this.image.substring(
+          //   "data:".length,
+          //   this.image.indexOf(";base64")
+          //  ));
         };
         reader.readAsDataURL(files[0]);
         this.$emit("input", files[0]);
       }
-      
     },
     // async sendPhoto() {
     //   const base64 = this.image;
@@ -299,9 +352,25 @@ export default {
     //   console.log(this.result);
     //   // console.log(imageUrl);
     // },
+
+    // Funtion for Emogi
+    append(emoji) {
+      this.messageInput += emoji;
+      console.log(this.messageInput);
+    },
+
     handleLike() {
       this.like = true;
-      console.log(this.like);
+      this.sendmsg();
+    },
+  },
+
+  // for emogi
+  directives: {
+    focus: {
+      inserted(el) {
+        el.focus();
+      },
     },
   },
   created() {
@@ -323,7 +392,10 @@ export default {
 .send_msg_btn {
   background-color: #208aec;
   padding: 10px;
-  margin-left: 10px;
+  margin-left: 21px;
+  position: relative;
+  top: -3.655rem;
+  left: 18rem;
 }
 .send_photo_btn {
   background-color: #208aec;
@@ -403,5 +475,111 @@ export default {
 .fa-thumbs-up {
   margin-left: 10px;
   font-size: 20px;
+}
+.input_button {
+  width: 36rem !important;
+  position: relative;
+  padding-left: 3rem !important;
+}
+.upload-like-icon {
+  padding:0 10px;
+  margin-left: 75px;
+}
+
+/* Emogi Icon Start */
+
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.regular-input {
+  padding: 0.5rem 1rem;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  width: 20rem;
+  height: 2rem;
+  outline: none;
+}
+
+.regular-input:focus {
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+}
+
+.emoji-invoker {
+  /* position: relative; */
+  top: 0.5rem !important ;
+  right: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  position: relative;
+  left: 23.5rem;
+}
+.emoji-invoker:hover {
+  transform: scale(1.1);
+}
+.emoji-invoker > svg {
+  fill: #b1c6d0;
+}
+
+.emoji-picker {
+  /* position: relative; */
+  z-index: 1;
+  font-family: Montserrat;
+  border: 1px solid #ccc;
+  width: 15rem;
+  height: 20rem;
+  overflow: scroll;
+  padding: 1rem;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 1px 1px 8px #c7dbe6;
+  margin-left: 23rem !important;
+}
+.emoji-picker__search {
+  display: flex;
+}
+.emoji-picker__search > input {
+  flex: 1;
+  border-radius: 10rem;
+  border: 1px solid #ccc;
+  padding: 0.5rem 1rem;
+  outline: none;
+}
+.emoji-picker h5 {
+  margin-bottom: 0;
+  color: #b1b1b1;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  cursor: default;
+}
+.emoji-picker .emojis {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.emoji-picker .emojis:after {
+  content: "";
+  flex: auto;
+}
+.emoji-picker .emojis span {
+  padding: 0.2rem;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.emoji-picker .emojis span:hover {
+  background: #ececec;
+  cursor: pointer;
+}
+/* Emogi Icon End */
+.input_icons {
+  position: relative;
 }
 </style>
