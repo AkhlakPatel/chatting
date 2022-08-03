@@ -85,13 +85,13 @@ p {
   width: 100%;
   max-width: 500px;
   margin: auto;
-  padding: 20px 0;
+  padding: 2px 0;
   text-align: left;
 }
 
 .header {
   align-items: center;
-  padding: 75px 0;
+  padding: 10px 0;
   background-color: #208aec;
 }
 

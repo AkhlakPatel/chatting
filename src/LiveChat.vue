@@ -1,14 +1,13 @@
 <template>
   <div>
-    <h2>Live chat</h2>
-    <div>
+    <div class="content_container">
       <div class="">
         <h2 class="text-center">
           {{ senderNicknameInput }} sending, {{ receiverNicknameInput }}
           receiving!
         </h2>
       </div>
-      <div class="msg-content">
+      <div class="msg-content" id="chatsection">
         <div v-for="item in result" :key="item.id">
           <div>
             <!-- Hanldle Text -->
@@ -56,6 +55,7 @@
       </div>
       <div class="new_message">
         <h2 class="new_message_title">New message</h2>
+
         <div class="input">
           <input
             class="input_button form_input"
@@ -63,23 +63,46 @@
             v-model="messageInput"
             @keyup.enter="sendmsg"
           />
+
           <div class="upload-icon">
             <input
               type="file"
               id="upload-file"
               style="display: none"
               ref="fileInput"
-              @input="onSelectFile"
+              @input="onSelectFile(1)"
               accept="image/png, image/gif, image/jpeg"
-               @keyup.enter="sendmsg"
+              @keyup.enter="sendmsg"
             />
+            <input
+              type="file"
+              id="upload-file"
+              style="display: none"
+              ref="videoInput"
+              @input="onSelectFile(2)"
+              accept="video/*"
+              @keyup.enter="sendmsg"
+            />
+
             <div class="input_icons">
-              <label
-                for="upload-file"
-                class="fa-solid fa-upload upload-like-icon"
-                @click="uploadFile"
-              ></label>
-              <i class="fa-solid fa-thumbs-up " @click="handleLike"></i>
+              <div class="media">
+                <div v-if="mediaIconShow" class="media">
+                  <div class="media_icon">
+                    <i class="fa-solid fa-image" @click="handleFile"></i>
+                  </div>
+                  <div class="media_icon">
+                    <i class="fa-solid fa-video" @click="handleVideo"></i>
+                  </div>
+                </div>
+
+                <label
+                  v-if="plusIconShow"
+                  for="upload-file"
+                  class="fa-solid fa-plus upload-like-icon"
+                  @click="handlePlusIcon"
+                ></label>
+                <i class="fa-solid fa-thumbs-up like" @click="handleLike"></i>
+              </div>
             </div>
           </div>
           <!--Icon Functionality Start  -->
@@ -157,6 +180,8 @@ export default {
       image: "",
       like: false,
       search: "", // for Icon/Emogi search
+      mediaIconShow: false,
+      plusIconShow: true,
     };
   },
   methods: {
@@ -206,7 +231,6 @@ export default {
         );
         showMessages();
         console.log(this.result);
-        // this.getPhoto();
       });
       subscribe.on("create", async (msg) => {
         console.log("new message send", msg.id);
@@ -280,12 +304,32 @@ export default {
       this.sendMessage();
     },
 
+    //  Handle chat scroll bottom always
+    handleChatSection() {
+      const chatSection = document.getElementById("chatsection");
+      chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
+    },
+
+    handlePlusIcon() {
+      this.mediaIconShow = true;
+      this.plusIconShow = false;
+    },
+
     // function for handle upload file
-    uploadFile() {
+    handleFile() {
       this.$refs.fileInput.click();
     },
-    onSelectFile() {
-      const input = this.$refs.fileInput;
+    handleVideo() {
+      this.$refs.videoInput.click();
+    },
+
+    onSelectFile(type) {
+      var input;
+      if (type == 1) {
+        input = this.$refs.fileInput;
+      } else if (type == 2) {
+        input = this.$refs.videoInput;
+      }
       const files = input.files;
       if (files && files[0]) {
         const reader = new FileReader();
@@ -299,6 +343,8 @@ export default {
         };
         reader.readAsDataURL(files[0]);
         this.$emit("input", files[0]);
+        this.plusIconShow = true;
+        this.mediaIconShow = false;
       }
     },
     // async sendPhoto() {
@@ -316,42 +362,7 @@ export default {
     //   await Photo.save();
     //   console.log("Success");
     // },
-    // async getPhoto() {
-    //   const parseQuery = new Parse.Query("Message");
-
-    //   // get messages that involve both nicknames
-    //   parseQuery.containedIn("sender", [
-    //     this.senderNicknameId,
-    //     this.receiverNicknameId,
-    //   ]); // AP & Bp
-
-    //   parseQuery.containedIn("receiver", [
-    //     this.senderNicknameId,
-    //     this.receiverNicknameId,
-    //   ]);
-
-    //   // Set result ordering
-    //   parseQuery.ascending("createdAt");
-
-    //   // parseQuery.includeAll();
-    //   parseQuery.exists("imageUrl");
-    //   let res = await parseQuery.find();
-    //   // let imageUrl = [];
-    //   for (let i = 0; i < res.length; i++) {
-    //     let obj = res[i];
-    //     this.result.push({
-    //       objectId: obj.get("objectId"),
-    //       // createdAt: obj.get("createdAt"),
-    //       sender: obj.get("sender"),
-    //       receiver: obj.get("receiver"),
-    //       imageUrl: obj.get("mediaUrl"),
-    //     });
-    //   }
-    //   // this.imageUrl = imageUrl;
-    //   // this.result.push(imageUrl);
-    //   console.log(this.result);
-    //   // console.log(imageUrl);
-    // },
+   
 
     // Funtion for Emogi
     append(emoji) {
@@ -375,6 +386,9 @@ export default {
   },
   created() {
     this.liveChat();
+  },
+  updated() {
+    this.handleChatSection();
   },
 };
 </script>
@@ -415,6 +429,7 @@ export default {
 
 .text-center {
   text-align: center;
+  padding-bottom: 2px;
 }
 
 .name {
@@ -449,6 +464,9 @@ export default {
   display: block;
   width: 600px;
   margin: auto;
+  overflow: auto;
+  height: 400px;
+  width: 600px;
 }
 .date {
   font-size: 10px;
@@ -472,9 +490,9 @@ export default {
 .fa-upload {
   font-size: 20px;
 }
-.fa-thumbs-up {
-  margin-left: 10px;
+.like {
   font-size: 20px;
+  margin-left: 10px;
 }
 .input_button {
   width: 36rem !important;
@@ -482,8 +500,8 @@ export default {
   padding-left: 3rem !important;
 }
 .upload-like-icon {
-  padding:0 10px;
-  margin-left: 75px;
+  padding: 0 10px;
+  font-size: 20px;
 }
 
 /* Emogi Icon Start */
@@ -519,7 +537,7 @@ export default {
   background: transparent;
   border: 0;
   position: relative;
-  left: 23.5rem;
+  left: 8.5rem;
 }
 .emoji-invoker:hover {
   transform: scale(1.1);
@@ -581,5 +599,12 @@ export default {
 /* Emogi Icon End */
 .input_icons {
   position: relative;
+}
+.media {
+  display: flex;
+  justify-content: center;
+}
+.media_icon {
+  margin: 5px 10px;
 }
 </style>
