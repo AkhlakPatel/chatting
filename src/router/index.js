@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Chat from '../ChatSetup.vue'
 import Emogi from '../Emogi.vue'
+import Test from '../Test.vue'
 
 Vue.use(VueRouter)
 
@@ -15,6 +16,11 @@ const routes = [
     path: '/emogi',
     name: 'Emogi',
     component:Emogi
+  },
+  {
+    path: '/test',
+    name: 'Test',
+    component:Test
   },
  
 ]

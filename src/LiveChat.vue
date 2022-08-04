@@ -8,6 +8,9 @@
         </h2>
       </div>
       <div class="msg-content" id="chatsection">
+        <div class="loading" v-if="loading">
+          <h5>Loading....</h5>
+        </div>
         <div v-for="item in result" :key="item.id">
           <div>
             <!-- Hanldle Text -->
@@ -35,7 +38,43 @@
                   : 'msg-left',
               ]"
             />
-            <!-- </div> -->
+            <!-- Handle Video -->
+            <div v-if="item.type == 2">
+              <!-- {{ item.mediaUrl.url }} -->
+
+              <video
+                width="320"
+                height="240"
+                controls
+                class="videoUrl"
+                v-bind:class="[
+                  item.sender.name == senderNicknameInput
+                    ? 'msg-right'
+                    : 'msg-left',
+                ]"
+              >
+                <source :src="item.mediaUrl.url" />
+                <source src="movie.ogg" type="video/ogg" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
+            <!-- Handle Audio -->
+            <div v-if="item.type == 3">
+              <audio
+                class="audioUrl"
+                controls
+                v-bind:class="[
+                  item.sender.name == senderNicknameInput
+                    ? 'msg-right'
+                    : 'msg-left',
+                ]"
+              >
+                <source :src="item.mediaUrl.url" type="audio/ogg" />
+                <source src="horse.mp3" type="audio/mpeg" />
+                Your browser does not support the audio element.
+              </audio>
+            </div>
 
             <!-- Handle like -->
             <div v-if="item.type == 4">
@@ -48,13 +87,14 @@
                 ]"
               ></i>
             </div>
+
             <!-- {{item.text}} for text-->
             <!-- {{item.imageUrl.url}} for images -->
           </div>
         </div>
       </div>
       <div class="new_message">
-        <h2 class="new_message_title">New message</h2>
+        <!-- <h2 class="new_message_title">New message</h2> -->
 
         <div class="input">
           <input
@@ -65,6 +105,7 @@
           />
 
           <div class="upload-icon">
+            <!--  1 for Images -->
             <input
               type="file"
               id="upload-file"
@@ -74,6 +115,7 @@
               accept="image/png, image/gif, image/jpeg"
               @keyup.enter="sendmsg"
             />
+            <!--  2 for videos -->
             <input
               type="file"
               id="upload-file"
@@ -81,6 +123,16 @@
               ref="videoInput"
               @input="onSelectFile(2)"
               accept="video/*"
+              @keyup.enter="sendmsg"
+            />
+            <!-- 3 for Audios -->
+            <input
+              type="file"
+              id="upload-file"
+              style="display: none"
+              ref="audioInput"
+              @input="onSelectFile(3)"
+              accept="audio/*"
               @keyup.enter="sendmsg"
             />
 
@@ -92,6 +144,9 @@
                   </div>
                   <div class="media_icon">
                     <i class="fa-solid fa-video" @click="handleVideo"></i>
+                  </div>
+                  <div class="media_icon">
+                    <i class="fa-solid fa-headphones" @click="handleAudio"></i>
                   </div>
                 </div>
 
@@ -177,11 +232,14 @@ export default {
     return {
       messageInput: "",
       result: {},
-      image: "",
+      // image: "",
+      imageData: "",
+      videoData: "",
       like: false,
       search: "", // for Icon/Emogi search
       mediaIconShow: false,
       plusIconShow: true,
+      loading: true,
     };
   },
   methods: {
@@ -231,6 +289,7 @@ export default {
         );
         showMessages();
         console.log(this.result);
+        this.loading = false;
       });
       subscribe.on("create", async (msg) => {
         console.log("new message send", msg.id);
@@ -238,6 +297,7 @@ export default {
         showMessages();
         // this.getPhoto();
       });
+     
     },
 
     // Message sender handler
@@ -270,9 +330,9 @@ export default {
           this.messageInput = "";
         }
 
-        // Handle iamge for send file
-        else if (this.image !== "") {
-          const base64 = this.image;
+        // Handle image for send file
+        else if (this.imageData !== "") {
+          const base64 = this.imageData;
           let type = base64.substring(
             "data:image/".length,
             base64.indexOf(";base64")
@@ -285,9 +345,58 @@ export default {
           Message.set("sender", senderNicknameObject);
           Message.set("receiver", receiverNicknameObject);
           const res = await Message.save();
-          if (res) console.log("Success", res);
-          // this.getPhoto();
-        } else if (this.like == true) {
+          if (res) {
+            console.log("Success Image", res);
+            this.imageData = "";
+          }
+        }
+
+        // Handle video data for send
+        else if (this.videoData !== "") {
+          const base64 = this.videoData;
+          let type = base64.substring(
+            "data:video/".length,
+            base64.indexOf(";base64")
+          );
+          console.log(type);
+          const video = new Parse.File("myVideo", {
+            base64: base64,
+          });
+          Message.set("mediaUrl", video);
+          Message.set("type", 2);
+          Message.set("sender", senderNicknameObject);
+          Message.set("receiver", receiverNicknameObject);
+          const res = await Message.save();
+          if (res) {
+            console.log("Success Video", res);
+            this.videoData = "";
+          }
+        }
+
+        // Handle Audio data for send
+        else if (this.audioData !== "") {
+          const base64 = this.audioData;
+          let type = base64.substring(
+            "data:video/".length,
+            base64.indexOf(";base64")
+          );
+          console.log(type);
+          const audio = new Parse.File("myVideo", {
+            base64: base64,
+          });
+          Message.set("mediaUrl", audio);
+          Message.set("type", 3);
+          Message.set("sender", senderNicknameObject);
+          Message.set("receiver", receiverNicknameObject);
+          const res = await Message.save();
+          if (res) {
+            console.log("Success Audio", res);
+            this.audioData = "";
+          }
+        }
+
+        // handle like for send
+        else if (this.like == true) {
           Message.set("type", 4);
           Message.set("sender", senderNicknameObject);
           Message.set("receiver", receiverNicknameObject);
@@ -307,7 +416,8 @@ export default {
     //  Handle chat scroll bottom always
     handleChatSection() {
       const chatSection = document.getElementById("chatsection");
-      chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
+      chatSection.scrollTop =
+        chatSection.scrollHeight - chatSection.clientHeight;
     },
 
     handlePlusIcon() {
@@ -322,24 +432,38 @@ export default {
     handleVideo() {
       this.$refs.videoInput.click();
     },
+    handleAudio() {
+      this.$refs.audioInput.click();
+    },
 
     onSelectFile(type) {
       var input;
       if (type == 1) {
         input = this.$refs.fileInput;
+        this.videoData = "";
+        this.audioData = "";
       } else if (type == 2) {
         input = this.$refs.videoInput;
+        this.imageData = "";
+        this.audioData = "";
+      } else if (type == 3) {
+        input = this.$refs.audioInput;
+        this.imageData = "";
+        this.videoData = "";
       }
       const files = input.files;
       if (files && files[0]) {
         const reader = new FileReader();
         reader.onload = (e) => {
-          this.image = e.target.result;
-          console.log(this.image);
-          //      console.log(this.image.substring(
-          //   "data:".length,
-          //   this.image.indexOf(";base64")
-          //  ));
+          if (type == 1) {
+            this.imageData = e.target.result;
+            console.log(this.imageData);
+          } else if (type == 2) {
+            this.videoData = e.target.result;
+            console.log(this.videoData);
+          } else if (type == 3) {
+            this.audioData = e.target.result;
+          }
         };
         reader.readAsDataURL(files[0]);
         this.$emit("input", files[0]);
@@ -362,7 +486,6 @@ export default {
     //   await Photo.save();
     //   console.log("Success");
     // },
-   
 
     // Funtion for Emogi
     append(emoji) {
@@ -386,6 +509,9 @@ export default {
   },
   created() {
     this.liveChat();
+    setInterval(() => {
+      if (!this.result) console.log("Loading");
+    }, 1000);
   },
   updated() {
     this.handleChatSection();
@@ -437,36 +563,39 @@ export default {
   color: rgb(121, 117, 117);
 }
 
-.content {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
 .msg-left {
   float: left;
   background-color: #8995a1;
-  width: 300px;
+  /* width: 300px; */
+  padding: 10px;
   margin: auto;
   margin-bottom: 10px;
   display: block;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  border-radius: 10px;
 }
 .msg-right {
   display: block;
   float: right;
-  background-color: #208aec;
-  width: 300px;
+  background-color: #4396e4;
+  /* width: 300px; */
+  padding: 10px;
   margin: auto;
   margin-bottom: 10px;
+  border-radius: 10px;
 }
 .msg-content {
-  background-color: #d8d8d8;
+  background-color: #c5b9b9;
   display: block;
   width: 600px;
   margin: auto;
   overflow: auto;
   height: 400px;
   width: 600px;
+  border: 2px solid #208aec;
+  border-radius: 10px;
+  padding: 10px;
 }
 .date {
   font-size: 10px;
@@ -482,10 +611,14 @@ export default {
   cursor: pointer;
 }
 .imageUrl {
-  width: 300px;
-  height: auto;
+  width: 280px;
+  height: 200px;
   background-position: center;
   background-repeat: no-repeat;
+}
+.videoUrl {
+  width: 280px;
+  height: 200px;
 }
 .fa-upload {
   font-size: 20px;
@@ -533,7 +666,7 @@ export default {
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
-  padding: 0;
+  padding: 0 236px !important;
   background: transparent;
   border: 0;
   position: relative;
@@ -606,5 +739,8 @@ export default {
 }
 .media_icon {
   margin: 5px 10px;
+}
+.loading {
+  padding-top: 12rem;
 }
 </style>
