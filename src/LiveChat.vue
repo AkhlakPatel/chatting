@@ -106,12 +106,21 @@
 
           <div class="upload-icon">
             <!--  1 for Images -->
-            <input
+            <!-- <input
               type="file"
               id="upload-file"
               style="display: none"
               ref="fileInput"
               @input="onSelectFile(1)"
+              accept="image/png, image/gif, image/jpeg"
+              @keyup.enter="sendmsg"
+            /> -->
+            <input
+              type="file"
+              id="uploadImage"
+              ref="fileInput"
+              style="display: none"
+              @input="onSelectImage"
               accept="image/png, image/gif, image/jpeg"
               @keyup.enter="sendmsg"
             />
@@ -297,13 +306,14 @@ export default {
         showMessages();
         // this.getPhoto();
       });
-     
     },
 
     // Message sender handler
     async sendMessage() {
       try {
         const messageText = this.messageInput;
+        // For handle Image
+        let imageData = localStorage.getItem('imageData');
 
         // Get sender and receiver nickname Parse objects
         const senderNicknameObjectQuery = new Parse.Query("Nickname");
@@ -331,8 +341,9 @@ export default {
         }
 
         // Handle image for send file
-        else if (this.imageData !== "") {
-          const base64 = this.imageData;
+        
+        else if (imageData !== "") {
+          const base64 = imageData;
           let type = base64.substring(
             "data:image/".length,
             base64.indexOf(";base64")
@@ -347,7 +358,8 @@ export default {
           const res = await Message.save();
           if (res) {
             console.log("Success Image", res);
-            this.imageData = "";
+            // this.imageData = "";
+            localStorage.removeItem('imageData');
           }
         }
 
@@ -436,6 +448,38 @@ export default {
       this.$refs.audioInput.click();
     },
 
+    onSelectImage() {
+      const file = document.querySelector("#uploadImage").files[0];
+
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.readAsDataURL(file);
+
+      reader.onload = function (event) {
+        const imgElement = document.createElement("img");
+        imgElement.src = event.target.result;
+
+        imgElement.onload = function (e) {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 400;
+
+          const scaleSize = (MAX_WIDTH / e.target.width) * 2;
+          canvas.width = MAX_WIDTH;
+          canvas.height = e.target.height * scaleSize;
+
+          const ctx = canvas.getContext("2d");
+
+          ctx.drawImage(e.target, 0, 0, canvas.width, canvas.height);
+
+          const srcEncoded = ctx.canvas.toDataURL(e.target, "image/jpeg");
+         
+          localStorage.setItem("imageData", srcEncoded);
+        };
+      };
+    },
+
     onSelectFile(type) {
       var input;
       if (type == 1) {
@@ -510,8 +554,8 @@ export default {
   created() {
     this.liveChat();
     setInterval(() => {
-      if (!this.result) console.log("Loading");
-    }, 1000);
+    //  console.log(this.imageData);
+    }, 3000);
   },
   updated() {
     this.handleChatSection();
@@ -567,7 +611,7 @@ export default {
   float: left;
   background-color: #8995a1;
   /* width: 300px; */
-  padding: 10px;
+  padding: 2px;
   margin: auto;
   margin-bottom: 10px;
   display: block;
@@ -580,7 +624,7 @@ export default {
   float: right;
   background-color: #4396e4;
   /* width: 300px; */
-  padding: 10px;
+  padding: 2px;
   margin: auto;
   margin-bottom: 10px;
   border-radius: 10px;
@@ -612,9 +656,10 @@ export default {
 }
 .imageUrl {
   width: 280px;
-  height: 200px;
+  height: 250px;
   background-position: center;
   background-repeat: no-repeat;
+  background-size: 10%;
 }
 .videoUrl {
   width: 280px;
