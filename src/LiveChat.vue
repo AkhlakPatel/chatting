@@ -92,6 +92,11 @@
             <!-- {{item.imageUrl.url}} for images -->
           </div>
         </div>
+        <div>
+          <!-- <div class="imageUrl msg-right sending_div" v-if="sending">
+              <p>Sending, Please Wait...</p>
+            </div> -->
+        </div>
       </div>
       <div class="new_message">
         <!-- <h2 class="new_message_title">New message</h2> -->
@@ -218,6 +223,10 @@
           <i class="fa-solid fa-share send_msg_btn" @click="sendmsg"></i>
         </div>
         <!-- <button class="send_msg_btn" @click="sendmsg">Send message</button> -->
+        <div>
+           <a id="download">Download</a> &nbsp;
+          <button id="stop" @click="voiceMessage">Stop</button>
+        </div>
       </div>
     </div>
   </div>
@@ -249,6 +258,7 @@ export default {
       mediaIconShow: false,
       plusIconShow: true,
       loading: true,
+      sending: false,
     };
   },
   methods: {
@@ -313,7 +323,8 @@ export default {
       try {
         const messageText = this.messageInput;
         // For handle Image
-        let imageData = localStorage.getItem('imageData');
+        let imageData = localStorage.getItem("imageData");
+        let voiceData = localStorage.getItem("voiceData");
 
         // Get sender and receiver nickname Parse objects
         const senderNicknameObjectQuery = new Parse.Query("Nickname");
@@ -331,6 +342,7 @@ export default {
 
         // Handle Text for send message
         if (this.messageInput !== "") {
+          console.log("Text sending..");
           Message.set("text", messageText);
           Message.set("type", 0);
           Message.set("sender", senderNicknameObject);
@@ -341,8 +353,13 @@ export default {
         }
 
         // Handle image for send file
-        
-        else if (imageData !== "") {
+        else if (
+          imageData !== "" &&
+          imageData !== null &&
+          imageData !== undefined
+        ) {
+          console.log("Image sending..");
+          this.sending = true;
           const base64 = imageData;
           let type = base64.substring(
             "data:image/".length,
@@ -356,15 +373,47 @@ export default {
           Message.set("sender", senderNicknameObject);
           Message.set("receiver", receiverNicknameObject);
           const res = await Message.save();
+          this.sending = false;
           if (res) {
             console.log("Success Image", res);
             // this.imageData = "";
-            localStorage.removeItem('imageData');
+            localStorage.removeItem("imageData");
+          }
+        }
+
+
+        // Handle Voice for send file
+        else if (
+          voiceData !== "" &&
+          voiceData !== null &&
+          voiceData !== undefined
+        ) {
+          console.log("Voice sending..");
+          this.sending = true;
+        let base64 = voiceData;
+          let type = base64.substring(
+            "data:image/".length,
+            base64.indexOf(";base64")
+          );
+          const file = new Parse.File("myfile" + "." + type, {
+            base64: base64,
+          });
+          Message.set("mediaUrl", file);
+          Message.set("type", 3);
+          Message.set("sender", senderNicknameObject);
+          Message.set("receiver", receiverNicknameObject);
+          const res = await Message.save();
+          this.sending = false;
+          if (res) {
+            console.log("Success Voice", res);
+            // this.imageData = "";
+            localStorage.removeItem("voiceData");
           }
         }
 
         // Handle video data for send
-        else if (this.videoData !== "") {
+        else if (this.videoData !== "" && this.videoData !== undefined) {
+          console.log("Video sending..");
           const base64 = this.videoData;
           let type = base64.substring(
             "data:video/".length,
@@ -386,7 +435,8 @@ export default {
         }
 
         // Handle Audio data for send
-        else if (this.audioData !== "") {
+        else if (this.audioData !== "" && this.audioData !== undefined) {
+          console.log("Audio sending..");
           const base64 = this.audioData;
           let type = base64.substring(
             "data:video/".length,
@@ -465,7 +515,7 @@ export default {
           const canvas = document.createElement("canvas");
           const MAX_WIDTH = 400;
 
-          const scaleSize = (MAX_WIDTH / e.target.width) * 2;
+          const scaleSize = MAX_WIDTH / e.target.width;
           canvas.width = MAX_WIDTH;
           canvas.height = e.target.height * scaleSize;
 
@@ -473,8 +523,8 @@ export default {
 
           ctx.drawImage(e.target, 0, 0, canvas.width, canvas.height);
 
-          const srcEncoded = ctx.canvas.toDataURL(e.target, "image/jpeg");
-         
+          const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 50);
+
           localStorage.setItem("imageData", srcEncoded);
         };
       };
@@ -515,6 +565,54 @@ export default {
         this.mediaIconShow = false;
       }
     },
+
+    // Audio
+    voiceMessage() {
+      const downloadLink = document.getElementById("download");
+      const stopButton = document.getElementById("stop");
+      const handleSuccess = function (stream) {
+        const options = { mimeType: "audio/webm" };
+        var recordedChunks = [];
+        const mediaRecorder = new MediaRecorder(stream, options);
+        mediaRecorder.addEventListener("dataavailable", function (e) {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+          console.log(recordedChunks);
+          var file = new File(recordedChunks, "name");
+          console.log(file);
+          //
+          function getBase64(file) {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = (error) => reject(error);
+            });
+          }
+          getBase64(file).then((data) => {
+            data = data.split(',')[1];
+            console.log(data);
+            localStorage.setItem('voiceData',data)
+          });
+          //
+        });
+        mediaRecorder.addEventListener("stop", async function () {
+          let a = (downloadLink.href = URL.createObjectURL(
+            new File(recordedChunks, "name")
+          ));
+          recordedChunks = a;
+        });
+        stopButton.addEventListener("click", function () {
+          mediaRecorder.stop();
+        });
+        mediaRecorder.start();
+      };
+      navigator.mediaDevices
+        .getUserMedia({ audio: true, video: false })
+
+        .then(handleSuccess);
+    },
+    // Audio
+
     // async sendPhoto() {
     //   const base64 = this.image;
     //   let type = base64.substring(
@@ -553,8 +651,9 @@ export default {
   },
   created() {
     this.liveChat();
+    localStorage.removeItem("imageData");
     setInterval(() => {
-    //  console.log(this.imageData);
+      //  console.log(this.imageData);
     }, 3000);
   },
   updated() {
@@ -787,5 +886,10 @@ export default {
 }
 .loading {
   padding-top: 12rem;
+}
+.sending_div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

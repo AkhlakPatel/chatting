@@ -20,17 +20,24 @@
     />
     <br />
     <br />
+    <br />
     <div class="mic">
-      <label for="">Voice</label>
-      <a id="download">Download</a>
+      <!-- <a id="download">Download</a> &nbsp; -->
       <button id="stop" @click="voiceMessage">Stop</button>
+      <br />
+      <!-- <audio controls>
+        <source :src="voiceData" type="audio/ogg" />
+        <source src="horse.mp3" type="audio/mpeg" />
+        Your browser does not support the audio element.
+      </audio> -->
     </div>
+    <br /><br />
     <h1>ImageCompressor</h1>
     <image-compressor :done="getFiles" :scale="100" :quality="20">
     </image-compressor>
     <div>
       <h2>ImageCompressor JS</h2>
-      <input type="file" id="upload" @input="process" accept=".jpg, .jpeg, .png" />
+      <input type="file" id="upload" @input="process" />
       <div>
         <img id="input" />
       </div>
@@ -48,7 +55,7 @@ export default {
   data() {
     return {
       voiceData: "",
-      imageData:"",
+      imageData: "",
     };
   },
   methods: {
@@ -63,7 +70,7 @@ export default {
       const reader = new FileReader();
 
       reader.readAsDataURL(file);
-        
+
       reader.onload = function (event) {
         const imgElement = document.createElement("img");
         imgElement.src = event.target.result;
@@ -74,21 +81,21 @@ export default {
           const MAX_WIDTH = 400;
 
           const scaleSize = MAX_WIDTH / e.target.width;
-          canvas.width = MAX_WIDTH * 2;
-          canvas.height = e.target.height * scaleSize * 2;
-          console.log(canvas.width,canvas.height)
+          canvas.width = MAX_WIDTH;
+          canvas.height = e.target.height * scaleSize;
+          console.log(canvas.width, canvas.height);
 
           const ctx = canvas.getContext("2d");
 
           ctx.drawImage(e.target, 0, 0, canvas.width, canvas.height);
 
-          console.log(ctx);
           const srcEncoded = ctx.canvas.toDataURL(e.target, "image/jpeg");
+          console.log(ctx);
 
           // you can send srcEncoded to the server
           document.querySelector("#output").src = srcEncoded;
           this.imageData = srcEncoded;
-         localStorage.setItem("imageData",srcEncoded)
+          localStorage.setItem("imageData", srcEncoded);
         };
       };
     },
@@ -96,6 +103,7 @@ export default {
       // For video
       if (type == 2) {
         let fileInput = this.$refs.videoInput;
+        console.log(fileInput)
         const reader = new FileReader();
         reader.readAsDataURL(fileInput.files[0]);
 
@@ -122,46 +130,57 @@ export default {
       }
     },
     voiceMessage() {
-      const downloadLink = document.getElementById("download");
+      // const downloadLink = document.getElementById("download");
       const stopButton = document.getElementById("stop");
-
       const handleSuccess = function (stream) {
         const options = { mimeType: "audio/webm" };
         var recordedChunks = [];
         const mediaRecorder = new MediaRecorder(stream, options);
-
         mediaRecorder.addEventListener("dataavailable", function (e) {
           if (e.data.size > 0) recordedChunks.push(e.data);
           console.log(recordedChunks);
+          var file = new File(recordedChunks, "name");
+          console.log(file);
+          //
+          function getBase64(file) {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = (error) => reject(error);
+            });
+          }
+          getBase64(file).then((data) => {
+            let a = data.split(',')[1];
+
+            console.log(a);
+          });
+          //
         });
-
-        mediaRecorder.addEventListener("stop", async function () {
-          let a = (downloadLink.href = URL.createObjectURL(
-            new Blob(recordedChunks)
-          ));
-
-          recordedChunks = a;
-          // console.log(recordedChunks);
-          // downloadLink.download = "acetest.wav";
-        });
-
+        // mediaRecorder.addEventListener("stop", async function () {
+        //   let a = (downloadLink.href = URL.createObjectURL(
+        //     new File(recordedChunks, "name")
+        //   ));
+        //   recordedChunks = a;
+        //   // this.voiceData = recordedChunks;
+        //   // console.log(this.voiceData);
+        //   // downloadLink.download = "acetest.wav";
+        // });
         stopButton.addEventListener("click", function () {
-          this.voiceData = recordedChunks;
-          console.log(this.voiceData);
           mediaRecorder.stop();
         });
-
         mediaRecorder.start();
       };
       navigator.mediaDevices
         .getUserMedia({ audio: true, video: false })
+
         .then(handleSuccess);
     },
   },
-  mounted(){
+  mounted() {
     setInterval(() => {
-// console.log(localStorage.getItem('imageData'))
+      // console.log()
     }, 2000);
-  }
+  },
 };
 </script>
