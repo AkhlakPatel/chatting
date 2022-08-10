@@ -171,6 +171,17 @@
                   @click="handlePlusIcon"
                 ></label>
                 <i class="fa-solid fa-thumbs-up like" @click="handleLike"></i>
+                <div class="voice-message">
+                  <i
+                    v-bind:class="[
+                      showVoice
+                        ? 'fa-solid fa-microphone'
+                        : 'fa-solid fa-microphone-slash',
+                    ]"
+                    id="stop"
+                    @click="voiceMessage"
+                  ></i>
+                </div>
               </div>
             </div>
           </div>
@@ -223,10 +234,10 @@
           <i class="fa-solid fa-share send_msg_btn" @click="sendmsg"></i>
         </div>
         <!-- <button class="send_msg_btn" @click="sendmsg">Send message</button> -->
-        <div>
-           <a id="download">Download</a> &nbsp;
-          <button id="stop" @click="voiceMessage">Stop</button>
-        </div>
+        <!-- <div>
+          <button @click="voiceMessage">Start</button>
+          <button id="stop">Stop</button>
+        </div> -->
       </div>
     </div>
   </div>
@@ -259,6 +270,7 @@ export default {
       plusIconShow: true,
       loading: true,
       sending: false,
+      showVoice: true,
     };
   },
   methods: {
@@ -381,7 +393,6 @@ export default {
           }
         }
 
-
         // Handle Voice for send file
         else if (
           voiceData !== "" &&
@@ -390,7 +401,7 @@ export default {
         ) {
           console.log("Voice sending..");
           this.sending = true;
-        let base64 = voiceData;
+          let base64 = voiceData;
           let type = base64.substring(
             "data:image/".length,
             base64.indexOf(";base64")
@@ -406,9 +417,8 @@ export default {
           this.sending = false;
           if (res) {
             console.log("Success Voice", res);
-            // this.imageData = "";
-            localStorage.removeItem("voiceData");
           }
+          localStorage.removeItem("voiceData");
         }
 
         // Handle video data for send
@@ -568,7 +578,7 @@ export default {
 
     // Audio
     voiceMessage() {
-      const downloadLink = document.getElementById("download");
+      this.showVoice = !this.showVoice;
       const stopButton = document.getElementById("stop");
       const handleSuccess = function (stream) {
         const options = { mimeType: "audio/webm" };
@@ -589,18 +599,14 @@ export default {
             });
           }
           getBase64(file).then((data) => {
-            data = data.split(',')[1];
+            data = data.split(",")[1];
             console.log(data);
-            localStorage.setItem('voiceData',data)
+            localStorage.setItem("voiceData", data);
           });
+
           //
         });
-        mediaRecorder.addEventListener("stop", async function () {
-          let a = (downloadLink.href = URL.createObjectURL(
-            new File(recordedChunks, "name")
-          ));
-          recordedChunks = a;
-        });
+
         stopButton.addEventListener("click", function () {
           mediaRecorder.stop();
         });
@@ -610,7 +616,10 @@ export default {
         .getUserMedia({ audio: true, video: false })
 
         .then(handleSuccess);
+        
     },
+
+   
     // Audio
 
     // async sendPhoto() {
@@ -652,6 +661,7 @@ export default {
   created() {
     this.liveChat();
     localStorage.removeItem("imageData");
+    localStorage.removeItem("voiceData");
     setInterval(() => {
       //  console.log(this.imageData);
     }, 3000);
@@ -891,5 +901,10 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.fa-microphone,
+.fa-microphone-slash {
+  padding-left: 18px;
+  padding-top: 2px;
 }
 </style>
