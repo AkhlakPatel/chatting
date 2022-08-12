@@ -401,6 +401,7 @@ export default {
         ) {
           console.log("Voice sending..");
           this.sending = true;
+          console.log(this.voiceData)
           let base64 = voiceData;
           let type = base64.substring(
             "data:image/".length,
@@ -476,6 +477,9 @@ export default {
           if (res) console.log("Success", res);
           this.like = false;
         }
+        else {
+          alert("There is no data to send server")
+        }
       } catch (error) {
         alert(error);
       }
@@ -533,7 +537,7 @@ export default {
 
           ctx.drawImage(e.target, 0, 0, canvas.width, canvas.height);
 
-          const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 50);
+          const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 30);
 
           localStorage.setItem("imageData", srcEncoded);
         };

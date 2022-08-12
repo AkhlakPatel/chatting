@@ -44,6 +44,7 @@
       <div>
         <img id="output" />
       </div>
+      <button type="button" class="btn btn-info" @click="isUpgrade ? proceedToPayment() :  validateSite() ">Continue</button>
     </div>
   </div>
 </template>
@@ -56,9 +57,16 @@ export default {
     return {
       voiceData: "",
       imageData: "",
+      isUpgrade:true
     };
   },
   methods: {
+    validateSite() {
+      console.log('working')
+    },
+    proceedToPayment(){
+      console.log('work')
+    },
     getFiles(obj) {
       console.log(obj);
     },
